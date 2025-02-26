@@ -18,7 +18,7 @@ const PrivateRoutes = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/create-account" />;
   }
 
   return (

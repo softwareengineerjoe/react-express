@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
-import Login from "./pages/Login";
+import Login from "./pages/auth/Login";
+import CreateAccount from "./pages/auth/CreateAccount";
 import NoPage from "./pages/NoPage";
 
 // utils
@@ -13,6 +14,7 @@ function App() {
       <Routes>
         {/* Login route */}
         <Route path="/login" element={<Login />} />
+        <Route path="/create-account" element={<CreateAccount />} />
 
         {/* Protected Routes */}
         <Route element={<PrivateRoutes />}>
