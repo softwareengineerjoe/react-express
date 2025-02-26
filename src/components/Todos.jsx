@@ -1,21 +1,31 @@
 import React, { useState } from "react";
 import sort from "../assets/Icons/Sort_desktop.svg";
 import edit from "../assets/Icons/Edit.svg";
+import deleteActive from "../assets/Icons/Delete_active.svg";
+import deleteInactive from "../assets/Icons/Delete_inactive.svg";
+import completedIcon from "../assets/Icons/Complete.svg";
+import attachmentIcon from "../assets/Icons/attachment.svg";
+import inProgressIcon from "../assets/Icons/InProgress.svg";
+import notStartedIcon from "../assets/Icons/NotStarted.svg";
+import cancelledIcon from "../assets/Icons/Cancelled.svg";
+import { formatDate } from "../utils/utils";
 
-const tasks = [
+const initialTasks = [
   {
     id: 1,
     title: "Complete React project - Final Version",
     dueDate: "2025-03-01",
     priority: "High",
     status: "In Progress",
+    hasAttachment: true,
   },
   {
     id: 2,
     title: "Write blog post on React Hooks and Functional Components",
     dueDate: "2025-03-05",
     priority: "Low",
-    status: "Not Started",
+    status: "Cancelled",
+    hasAttachment: false,
   },
   {
     id: 3,
@@ -23,59 +33,28 @@ const tasks = [
     dueDate: "2025-02-28",
     priority: "Critical",
     status: "Complete",
+    hasAttachment: true,
   },
   {
     id: 4,
     title: "Review and merge pull requests",
     dueDate: "2025-03-02",
-    priority: "Medium",
+    priority: "Low",
     status: "In Progress",
+    hasAttachment: false,
   },
   {
     id: 5,
     title: "Prepare documentation for new features",
     dueDate: "2025-03-10",
-    priority: "Medium",
-    status: "Not Started",
-  },
-  {
-    id: 6,
-    title: "Host weekly sprint review meeting",
-    dueDate: "2025-03-03",
-    priority: "High",
-    status: "Complete",
-  },
-  {
-    id: 7,
-    title: "Client presentation preparation - Finalize slides",
-    dueDate: "2025-03-07",
-    priority: "High",
-    status: "In Progress",
-  },
-  {
-    id: 8,
-    title: "Conduct user testing for new feature",
-    dueDate: "2025-03-08",
-    priority: "Critical",
-    status: "Not Started",
-  },
-  {
-    id: 9,
-    title: "Update project roadmap with new deadlines",
-    dueDate: "2025-03-04",
-    priority: "Medium",
-    status: "Not Started",
-  },
-  {
-    id: 10,
-    title: "Organize team-building activity for remote employees",
-    dueDate: "2025-03-12",
     priority: "Low",
-    status: "Complete",
+    status: "Not Started",
+    hasAttachment: true,
   },
 ];
 
 export default function Todos() {
+  const [tasks, setTasks] = useState(initialTasks);
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [sortConfig, setSortConfig] = useState({
     key: "title",
@@ -108,7 +87,7 @@ export default function Todos() {
     } else if (key === "dueDate") {
       result = new Date(a.dueDate) - new Date(b.dueDate);
     } else if (key === "priority") {
-      const priorityOrder = ["Low", "Medium", "High", "Critical"];
+      const priorityOrder = ["Low", "High", "Critical"];
       result =
         priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
     } else if (key === "status") {
@@ -118,23 +97,47 @@ export default function Todos() {
     return direction === "asc" ? result : -result;
   });
 
+  const getStatusImage = (status) => {
+    if (status === "Complete") {
+      return <img src={completedIcon} alt="Completed" />;
+    } else if (status === "In Progress") {
+      return <img src={inProgressIcon} alt="In Progress" />;
+    } else if (status === "Not Started") {
+      return <img src={notStartedIcon} alt="Not Started" />;
+    } else if (status === "Cancelled") {
+      return <img src={cancelledIcon} alt="Cancelled" />;
+    }
+    return null;
+  };
+
+  const handleDelete = () => {
+    setTasks((prevTasks) =>
+      prevTasks.filter((task) => !selectedTasks.includes(task.id))
+    );
+    setSelectedTasks([]);
+  };
+
   return (
     <div className="overflow-hidden rounded-xl shadow-lg border-2 border-[#c7ced6] overflow-y-scroll">
       <table className="min-w-full table-auto bg-white rounded-xl border-separate border-spacing-0">
         <thead className="sticky top-0 bg-white z-10">
           <tr>
-            <th className="px-5 py-3 border-b-2 border-[#c7ced6]">
-              <input
-                type="checkbox"
-                onChange={() => {
-                  if (selectedTasks.length === tasks.length) {
-                    setSelectedTasks([]);
-                  } else {
-                    setSelectedTasks(tasks.map((task) => task.id));
-                  }
-                }}
-                checked={selectedTasks.length === tasks.length}
-              />
+            <th className="px-5 py-3 border-b-2 border-[#c7ced6] align-middle">
+              <button
+                disabled={selectedTasks.length === 0}
+                className={`${
+                  selectedTasks.length === 0
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer "
+                }`}
+                onClick={handleDelete}
+              >
+                <img
+                  src={selectedTasks.length > 0 ? deleteActive : deleteInactive}
+                  alt="delete icon"
+                  className="mx-auto mt-2"
+                />
+              </button>
             </th>
             <th
               className="px-5 py-3 cursor-pointer border-b-2 border-[#c7ced6] text-left"
@@ -187,32 +190,51 @@ export default function Todos() {
               </td>
 
               <td
-                className={`px-5 py-3 ${
+                className={`px-5 py-3 font-semibold underline ${
                   index === sortedTasks.length - 1 ? "" : "border-b-2"
                 } border-[#c7ced6]`}
               >
-                {task.title}
+                <span className="flex items-center gap-4">
+                  {task.title}
+                  {task.hasAttachment && <img src={attachmentIcon} />}
+                </span>
               </td>
               <td
                 className={`px-5 py-3 ${
                   index === sortedTasks.length - 1 ? "" : "border-b-2"
                 } border-[#c7ced6]`}
               >
-                {task.dueDate}
+                {formatDate(task.dueDate)}
               </td>
               <td
                 className={`px-5 py-3 ${
                   index === sortedTasks.length - 1 ? "" : "border-b-2"
                 } border-[#c7ced6]`}
               >
-                {task.priority}
+                <span
+                  className={`inline-block px-2 py-1 rounded font-semibold ${
+                    task.priority === "Low"
+                      ? "bg-[#f9fff6] text-[#165700] border-2 border-[#2fbd00]"
+                      : task.priority === "High"
+                      ? "bg-[#ffdf2] text-[#624d00] border-2 border-[#fac300]"
+                      : task.priority === "Critical"
+                      ? "bg-[#fff6f] text-[#7f0000] border-2 border-[#eb0000]"
+                      : ""
+                  }`}
+                >
+                  {task.priority}
+                </span>
               </td>
+
               <td
                 className={`px-5 py-3 ${
                   index === sortedTasks.length - 1 ? "" : "border-b-2"
                 } border-[#c7ced6]`}
               >
-                {task.status}
+                <span className="flex gap-2 items-center">
+                  {getStatusImage(task.status)}
+                  {task.status}
+                </span>
               </td>
               <td
                 className={`px-5 py-3 ${

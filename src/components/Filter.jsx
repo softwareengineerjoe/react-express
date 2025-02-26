@@ -51,7 +51,7 @@ export default function Filter() {
         </button>
 
         {isFilterClicked && (
-          <ul className="py-2 absolute top-16 left-5 bg-white rounded-xl border border-[#c7ced6] w-40 font-semibold">
+          <ul className="py-2 absolute top-16 left-5 bg-white rounded-xl border border-[#c7ced6] w-40 font-semibold z-20">
             <li
               className="hover:bg-[#f2f8fd] ease-in duration-150 px-4 py-1 group flex items-center justify-between cursor-pointer"
               onClick={togglePriority}
