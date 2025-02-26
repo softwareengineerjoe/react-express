@@ -63,9 +63,9 @@ export default function Login() {
           </button>
         </div>
 
-        <button className="mt-6 bg-[#027cec] px-4 text-white py-2 rounded cursor-pointer">
+        <Link to={"/dashboard"} className="mt-6 bg-[#027cec] px-4 text-white py-2 rounded cursor-pointer text-center">
           Sign in
-        </button>
+        </Link>
         <p className="text-center mt-4 font-semibold">
           Don't have an account?{" "}
           <Link to={"/create-account"} className="text-[#027cec]">
