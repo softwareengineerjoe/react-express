@@ -9,53 +9,14 @@ import inProgressIcon from "../assets/Icons/InProgress.svg";
 import notStartedIcon from "../assets/Icons/NotStarted.svg";
 import cancelledIcon from "../assets/Icons/Cancelled.svg";
 import { formatDate } from "../utils/utils";
+import DeleteModal from "./dialog/DeleteModal";
+import { mockTasks } from "../common";
 
-const initialTasks = [
-  {
-    id: 1,
-    title: "Complete React project - Final Version",
-    dueDate: "2025-03-01",
-    priority: "High",
-    status: "In Progress",
-    hasAttachment: true,
-  },
-  {
-    id: 2,
-    title: "Write blog post on React Hooks and Functional Components",
-    dueDate: "2025-03-05",
-    priority: "Low",
-    status: "Cancelled",
-    hasAttachment: false,
-  },
-  {
-    id: 3,
-    title: "Plan team meeting - Discuss project timeline and tasks",
-    dueDate: "2025-02-28",
-    priority: "Critical",
-    status: "Complete",
-    hasAttachment: true,
-  },
-  {
-    id: 4,
-    title: "Review and merge pull requests",
-    dueDate: "2025-03-02",
-    priority: "Low",
-    status: "In Progress",
-    hasAttachment: false,
-  },
-  {
-    id: 5,
-    title: "Prepare documentation for new features",
-    dueDate: "2025-03-10",
-    priority: "Low",
-    status: "Not Started",
-    hasAttachment: true,
-  },
-];
 
 export default function Todos() {
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState(mockTasks);
   const [selectedTasks, setSelectedTasks] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "title",
     direction: "asc",
@@ -115,10 +76,27 @@ export default function Todos() {
       prevTasks.filter((task) => !selectedTasks.includes(task.id))
     );
     setSelectedTasks([]);
+    setIsModalOpen(false);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleDeleteClick = () => {
+    setIsModalOpen(true);
   };
 
   return (
     <div className="overflow-hidden rounded-xl shadow-lg border-2 border-[#c7ced6] overflow-y-scroll">
+       {isModalOpen && (
+        <DeleteModal
+          selectedTasks={selectedTasks}
+          handleDelete={handleDelete}
+          handleModalClose={handleModalClose}
+        />
+      )}
+
       <table className="min-w-full table-auto bg-white rounded-xl border-separate border-spacing-0">
         <thead className="sticky top-0 bg-white z-10">
           <tr>
@@ -129,14 +107,25 @@ export default function Todos() {
                   selectedTasks.length === 0
                     ? "cursor-not-allowed"
                     : "cursor-pointer "
+                } ${
+                  selectedTasks.length > 0
+                    ? "flex items-center justify-center gap-2 border-2 border-[#c7ced6] p-2 rounded mx-auto"
+                    : ""
                 }`}
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
               >
                 <img
                   src={selectedTasks.length > 0 ? deleteActive : deleteInactive}
                   alt="delete icon"
-                  className="mx-auto mt-2"
+                  className={`${
+                    selectedTasks.length > 0 ? "" : "mt-2 mx-auto"
+                  }`}
                 />
+                {selectedTasks.length > 0 && (
+                  <p className="py-0.5 px-2 rounded-full bg-[#62c6ff] text-white text-xs font-semibold">
+                    {selectedTasks.length}
+                  </p>
+                )}
               </button>
             </th>
             <th
@@ -186,6 +175,7 @@ export default function Todos() {
                   type="checkbox"
                   checked={selectedTasks.includes(task.id)}
                   onChange={() => handleCheckboxChange(task.id)}
+                  className="w-5 h-5 border-2 border-[#c7ced6] rounded-md transition-colors duration-200 peer checked:bg-[#62c6ff] checked:border-[#62c6ff]"
                 />
               </td>
 

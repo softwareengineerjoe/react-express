@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./context/UserContext";
 import Home from "./pages/Home";
+import NewTask from "./pages/NewTask";
 import Login from "./pages/auth/Login";
 import CreateAccount from "./pages/auth/CreateAccount";
 import NoPage from "./pages/NoPage";
@@ -10,7 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import PrivateRoutes from "./utils/PrivateRoutes";
 
 function App() {
-  const userRoutes = [{ path: "/", element: <Home /> }];
+  const userRoutes = [{ path: "/", element: <Dashboard /> }];
   return (
     <UserProvider>
       <Router>
@@ -18,7 +19,8 @@ function App() {
           {/* Login route */}
           <Route path="/login" element={<Login />} />
           <Route path="/create-account" element={<CreateAccount />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/new-task" element={<NewTask />} />
 
           {/* Protected Routes */}
           <Route element={<PrivateRoutes />}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import filter from "../assets/Icons/Filter.svg";
 import arrowRight from "../assets/Icons/Accordion_supress.svg";
+import { Link } from "react-router-dom";
 
 export default function Filter() {
   const [isFilterClicked, setIsFilterClicked] = useState(false);
@@ -38,7 +39,7 @@ export default function Filter() {
 
   return (
     <div
-      ref={filterRef} // Attach the ref to the filter container
+      ref={filterRef} 
       className="bg-white px-5 py-3 rounded-xl flex items-center justify-between border-2 border-[#c7ced6] relative"
     >
       <div className="group">
@@ -151,9 +152,9 @@ export default function Filter() {
         )}
       </div>
 
-      <button className="rounded-full bg-[#027cec] text-white px-5 py-2 flex items-center justify-center w-fit gap-4 cursor-pointer">
-        <span>+</span> New Task
-      </button>
+      <Link to={"/new-task"} className="rounded-full bg-[#027cec] text-white px-5 py-2 flex items-center justify-center w-fit gap-2 cursor-pointer">
+        <span>+</span>New Task
+      </Link>
     </div>
   );
 }

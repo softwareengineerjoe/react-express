@@ -3,16 +3,29 @@ import Sidebar from "./Sidebar";
 import { useUser } from "../context/UserContext";
 import Signout from "./dialog/Signout";
 
-export default function Layout({ children, title }) {
+export default function Layout({ children, title, subtitle }) {
   const { isSignoutOpen } = useUser();
 
+  const goBack = () => {
+    window.history.back();
+  };
   return (
     <main className="w-full min-h-screen overflow-hidden flex flex-row relative">
       <Signout isOpen={isSignoutOpen} />
       <Sidebar />
       <section className="pr-4 py-4 w-full overflow-hidden">
         <div className="rounded bg-[#f2f8fd] w-full h-full shadow p-4 flex flex-col gap-2 max-h-[95vh]">
-          <h2 className="font-semibold mb-3">{title}</h2>
+          <div className="flex flex-row gap-2 items-center font-semibold mb-3">
+            <h2 className={`${subtitle ? "text-[#027cec]" : ""}`}>
+              {!subtitle ? title : <button onClick={goBack} className="cursor-pointer">{"< Back"}</button>}
+            </h2>
+            {subtitle && (
+              <>
+                <div className="border border-[#c7ced6] h-5" /> <h2>{subtitle}</h2>
+              </>
+            )}
+          </div>
+
           {children}
         </div>
       </section>

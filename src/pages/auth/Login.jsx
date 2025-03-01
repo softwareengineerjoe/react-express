@@ -63,7 +63,7 @@ export default function Login() {
           </button>
         </div>
 
-        <Link to={"/dashboard"} className="mt-6 bg-[#027cec] px-4 text-white py-2 rounded cursor-pointer text-center">
+        <Link to={"/home"} className="mt-6 bg-[#027cec] px-4 text-white py-2 rounded cursor-pointer text-center">
           Sign in
         </Link>
         <p className="text-center mt-4 font-semibold">
