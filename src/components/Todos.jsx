@@ -8,10 +8,12 @@ import attachmentIcon from "../assets/Icons/attachment.svg";
 import inProgressIcon from "../assets/Icons/InProgress.svg";
 import notStartedIcon from "../assets/Icons/NotStarted.svg";
 import cancelledIcon from "../assets/Icons/Cancelled.svg";
+import accordionSupress from "../assets/Icons/Accordion_supress.svg";
+import accordionExpand from "../assets/Icons/Accordion_expand.svg";
 import { formatDate } from "../utils/utils";
 import DeleteModal from "./dialog/DeleteModal";
 import { mockTasks } from "../common";
-
+import { Link } from "react-router-dom";
 
 export default function Todos() {
   const [tasks, setTasks] = useState(mockTasks);
@@ -21,6 +23,9 @@ export default function Todos() {
     key: "title",
     direction: "asc",
   });
+
+  // State to track which task is expanded
+  const [expandedTasks, setExpandedTasks] = useState({});
 
   const handleCheckboxChange = (taskId) => {
     setSelectedTasks((prev) =>
@@ -37,6 +42,13 @@ export default function Todos() {
     }
 
     setSortConfig({ key, direction });
+  };
+
+  const toggleSubTasks = (taskId) => {
+    setExpandedTasks((prev) => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
   };
 
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -89,7 +101,7 @@ export default function Todos() {
 
   return (
     <div className="overflow-hidden rounded-xl shadow-lg border-2 border-[#c7ced6] overflow-y-scroll">
-       {isModalOpen && (
+      {isModalOpen && (
         <DeleteModal
           selectedTasks={selectedTasks}
           handleDelete={handleDelete}
@@ -165,80 +177,119 @@ export default function Todos() {
         </thead>
         <tbody>
           {sortedTasks.map((task, index) => (
-            <tr key={task.id}>
-              <td
-                className={`px-5 py-3 ${
-                  index === sortedTasks.length - 1 ? "" : "border-b-2"
-                } border-[#c7ced6] text-center align-middle`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTasks.includes(task.id)}
-                  onChange={() => handleCheckboxChange(task.id)}
-                  className="w-5 h-5 border-2 border-[#c7ced6] rounded-md transition-colors duration-200 peer checked:bg-[#62c6ff] checked:border-[#62c6ff]"
-                />
-              </td>
+            <React.Fragment key={task.id}>
+              <tr>
+                <td
+                  className={`px-5 py-3 ${
+                    index === sortedTasks.length - 1 ? "" : "border-b-2"
+                  } border-[#c7ced6] text-center align-middle`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTasks.includes(task.id)}
+                    onChange={() => handleCheckboxChange(task.id)}
+                    className="w-5 h-5 border-2 border-[#c7ced6] rounded-md transition-colors duration-200 peer checked:bg-[#62c6ff] checked:border-[#62c6ff]"
+                  />
+                </td>
 
-              <td
-                className={`px-5 py-3 font-semibold underline ${
-                  index === sortedTasks.length - 1 ? "" : "border-b-2"
-                } border-[#c7ced6]`}
-              >
-                <span className="flex items-center gap-4">
-                  {task.title}
-                  {task.hasAttachment && <img src={attachmentIcon} />}
-                </span>
-              </td>
-              <td
-                className={`px-5 py-3 ${
-                  index === sortedTasks.length - 1 ? "" : "border-b-2"
-                } border-[#c7ced6]`}
-              >
-                {formatDate(task.dueDate)}
-              </td>
-              <td
-                className={`px-5 py-3 ${
-                  index === sortedTasks.length - 1 ? "" : "border-b-2"
-                } border-[#c7ced6]`}
-              >
-                <span
-                  className={`inline-block px-2 py-1 rounded font-semibold ${
-                    task.priority === "Low"
-                      ? "bg-[#f9fff6] text-[#165700] border-2 border-[#2fbd00]"
-                      : task.priority === "High"
-                      ? "bg-[#ffdf2] text-[#624d00] border-2 border-[#fac300]"
-                      : task.priority === "Critical"
-                      ? "bg-[#fff6f] text-[#7f0000] border-2 border-[#eb0000]"
+                <td
+                  className={`px-5 py-3 font-semibold underline ${
+                    index === sortedTasks.length - 1 ? "" : "border-b-2"
+                  } border-[#c7ced6]`}
+                >
+                  <span className="flex items-center gap-4">
+                    {/* Accordion toggle */}
+                    <img
+                      src={
+                        expandedTasks[task.id]
+                          ? accordionExpand
+                          : accordionSupress
+                      }
+                      alt="accordion"
+                      onClick={() => toggleSubTasks(task.id)}
+                      className="cursor-pointer"
+                    />
+                    <Link to={`/home/view-task/${task.id}`}>{task.title}</Link>
+                    {task.hasAttachment && <img src={attachmentIcon} />}
+                  </span>
+                </td>
+                <td
+                  className={`px-5 py-3 ${
+                    index === sortedTasks.length - 1 ? "" : "border-b-2"
+                  } border-[#c7ced6] ${
+                    new Date(task.dueDate) < new Date() &&
+                    task.status !== "Complete"
+                      ? "text-red-500"
                       : ""
                   }`}
                 >
-                  {task.priority}
-                </span>
-              </td>
+                  {formatDate(task.dueDate)}
+                </td>
 
-              <td
-                className={`px-5 py-3 ${
-                  index === sortedTasks.length - 1 ? "" : "border-b-2"
-                } border-[#c7ced6]`}
-              >
-                <span className="flex gap-2 items-center">
-                  {getStatusImage(task.status)}
-                  {task.status}
-                </span>
-              </td>
-              <td
-                className={`px-5 py-3 ${
-                  index === sortedTasks.length - 1 ? "" : "border-b-2"
-                } border-[#c7ced6]`}
-              >
-                <button
-                  onClick={() => alert(`Edit task with ID: ${task.id}`)}
-                  className="text-blue-500 cursor-pointer"
+                <td
+                  className={`px-5 py-3 ${
+                    index === sortedTasks.length - 1 ? "" : "border-b-2"
+                  } border-[#c7ced6]`}
                 >
-                  <img src={edit} alt="pen icon" />
-                </button>
-              </td>
-            </tr>
+                  <span
+                    className={`inline-block px-2 py-1 rounded font-semibold ${
+                      task.priority === "Low"
+                        ? "bg-[#f9fff6] text-[#165700] border-2 border-[#2fbd00]"
+                        : task.priority === "High"
+                        ? "bg-[#ffdf2] text-[#624d00] border-2 border-[#fac300]"
+                        : task.priority === "Critical"
+                        ? "bg-[#fff6f] text-[#7f0000] border-2 border-[#eb0000]"
+                        : ""
+                    }`}
+                  >
+                    {task.priority}
+                  </span>
+                </td>
+
+                <td
+                  className={`px-5 py-3 ${
+                    index === sortedTasks.length - 1 ? "" : "border-b-2"
+                  } border-[#c7ced6]`}
+                >
+                  <span className="flex gap-2 items-center">
+                    {getStatusImage(task.status)}
+                    {task.status}
+                  </span>
+                </td>
+                <td
+                  className={`px-5 py-3 ${
+                    index === sortedTasks.length - 1 ? "" : "border-b-2"
+                  } border-[#c7ced6]`}
+                >
+                  <Link
+                    to={`/home/view-task/edit-task/${task.id}`}
+                    className="text-blue-500 cursor-pointer"
+                  >
+                    <img src={edit} alt="pen icon" />
+                  </Link>
+                </td>
+              </tr>
+
+              {/* Render Subtasks */}
+              {expandedTasks[task.id] &&
+                task.subTasks &&
+                task.subTasks.map((subTask) => (
+                  <tr key={subTask.id}>
+                    <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                    <td className="px-5 py-3 border-b-2 border-[#c7ced6] indent-24">
+                      {subTask.title}
+                    </td>
+                    <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                    <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                    <td className="px-5 py-3 border-b-2 border-[#c7ced6]">
+                      <span className="flex items-center gap-2 ml-6">
+                        {getStatusImage(subTask.status)}
+                        {subTask.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+            </React.Fragment>
           ))}
         </tbody>
       </table>

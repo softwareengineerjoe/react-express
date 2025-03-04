@@ -9,6 +9,8 @@ import Dashboard from "./pages/Dashboard";
 
 // utils
 import PrivateRoutes from "./utils/PrivateRoutes";
+import ViewTask from "./pages/ViewTask";
+import EditTask from "./pages/EditTask";
 
 function App() {
   const userRoutes = [{ path: "/", element: <Dashboard /> }];
@@ -20,7 +22,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/create-account" element={<CreateAccount />} />
           <Route path="/home" element={<Home />} />
-          <Route path="/new-task" element={<NewTask />} />
+          <Route path="home/new-task" element={<NewTask />} />
+          <Route path="home/view-task/:taskId" element={<ViewTask />} />
+          <Route path="home/view-task/edit-task/:taskId" element={<EditTask />} />
 
           {/* Protected Routes */}
           <Route element={<PrivateRoutes />}>

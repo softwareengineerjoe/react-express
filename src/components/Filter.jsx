@@ -152,7 +152,7 @@ export default function Filter() {
         )}
       </div>
 
-      <Link to={"/new-task"} className="rounded-full bg-[#027cec] text-white px-5 py-2 flex items-center justify-center w-fit gap-2 cursor-pointer">
+      <Link to={"/home/new-task"} className="rounded-full bg-[#027cec] text-white px-5 py-2 flex items-center justify-center w-fit gap-2 cursor-pointer">
         <span>+</span>New Task
       </Link>
     </div>

@@ -7,3 +7,11 @@ export const formatDate = (date) => {
     return `${month}/${day}/${year}`;
   };
   
+
+  export const formatStringDate = (date) => {
+    if (!date) return null;
+    
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    return new Date(date).toLocaleDateString('en-GB', options);
+  };
+  
