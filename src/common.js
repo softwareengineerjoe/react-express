@@ -7,8 +7,8 @@ export const mockTasks = [
     status: "In Progress",
     hasAttachment: true,
     details: "This task involves completing the final version of the React project, including polishing UI, fixing bugs, and finalizing features.",
-    dateCreated: "2025-02-01",  // New property
-    dateCompleted: null,  // New property (null means it hasn't been completed yet)
+    dateCreated: "2025-02-01",
+    dateCompleted: null, 
     subTasks: [
       {
         id: 1,
@@ -35,7 +35,7 @@ export const mockTasks = [
     status: "Cancelled",
     hasAttachment: false,
     details: "The task is to write a detailed blog post explaining React Hooks and Functional Components with examples.",
-    dateCreated: "2025-02-20",  // New property
+    dateCreated: "2025-02-20",
     dateCompleted: "2025-02-25",
     subTasks: [
       {

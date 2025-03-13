@@ -4,18 +4,34 @@ import closeIcon from "../assets/Icons/Close.svg";
 import deleteActive from "../assets/Icons/Delete_active.svg";
 import DeleteSubtask from "../components/dialog/DeleteSubTask";
 import { mockTasks } from "../common"; // Mock tasks
+import { createTask } from "../api/UsersApi";
+import { Link } from "react-router-dom";
 
 export default function NewTask() {
   const fileInputRef = useRef(null);
   const [files, setFiles] = useState([]);
-  const [subtasks, setSubtasks] = useState(mockTasks[0]?.subTasks || []); // Initialize using the first task's subTasks
-  const [selectedSubTask, setSelectedSubTask] = useState(null); // Track selected subtask
+  const [subtasks, setSubtasks] = useState([]);
+  const [selectedSubTask, setSelectedSubTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [subtaskCount, setSubtaskCount] = useState(
-    mockTasks[0]?.subTasks.length || 0
-  ); // Initialize count based on the first task's subTasks length
+  const [subtaskCount, setSubtaskCount] = useState(0);
+  const today = new Date().toISOString().split("T")[0];
+  const [taskDetails, setTaskDetails] = useState({
+    title: "",
+    priority: "low",
+    status: "not started",
+    dateCreated: today,
+    dueDate: "",
+    details: "",
+  });
 
-  // Handle file change when a user selects files
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setTaskDetails((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files).filter((file) => {
       const isValidType = file.type.startsWith("image/");
@@ -43,31 +59,16 @@ export default function NewTask() {
     setFiles(files.filter((file) => file !== fileToRemove));
   };
 
-  // Handle adding a subtask
   const handleAddSubtask = () => {
     const newSubtask = {
       id: subtaskCount + 1,
       title: `Subtask ${subtaskCount + 1}`,
-      status: "not-started", // default status
+      status: "not started",
     };
     setSubtasks([...subtasks, newSubtask]);
     setSubtaskCount(subtaskCount + 1); // Increment subtask counter
   };
 
-  // Handle removing a subtask
-  const handleRemoveSubtask = (id) => {
-    setSubtasks(subtasks.filter((subtask) => subtask.id !== id));
-  };
-
-  // Handle status change of a subtask
-  const handleStatusChange = (id, newStatus) => {
-    const updatedSubtasks = subtasks.map((subtask) =>
-      subtask.id === id ? { ...subtask, status: newStatus } : subtask
-    );
-    setSubtasks(updatedSubtasks);
-  };
-
-  // Handle title change of a subtask
   const handleTitleChange = (id, newTitle) => {
     const updatedSubtasks = subtasks.map((subtask) =>
       subtask.id === id ? { ...subtask, title: newTitle } : subtask
@@ -75,33 +76,69 @@ export default function NewTask() {
     setSubtasks(updatedSubtasks);
   };
 
-  // Handle deletion of selected subtasks
-  const handleDelete = () => {
-    setSubtasks((prevSubtasks) =>
-      prevSubtasks.filter((task) => task.id !== selectedSubTask.id)
+  const handleStatusChange = (id, newStatus) => {
+    const updatedSubtasks = subtasks.map((subtask) =>
+      subtask.id === id ? { ...subtask, status: newStatus } : subtask
     );
-    setSelectedSubTask(null); // Clear the selected subtask after deletion
-    setIsModalOpen(false); // Close modal after deletion
+    setSubtasks(updatedSubtasks);
   };
 
-  // Handle modal close
-  const handleModalClose = () => {
-    setIsModalOpen(false);
+  const handleRemoveSubtask = (id) => {
+    setSubtasks(subtasks.filter((subtask) => subtask.id !== id));
   };
 
-  // Handle delete click to open the modal and set selected subtask
-  const handleDeleteClick = (subtask) => {
-    setSelectedSubTask(subtask);
-    setIsModalOpen(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Set dateCreated to today's date if not already set
+    if (!taskDetails.dateCreated) {
+      const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+      setTaskDetails((prev) => ({
+        ...prev,
+        dateCreated: today,
+      }));
+    }
+
+    // If the status is "complete", add dateComplete as dueDate
+    let newTask = {
+      ...taskDetails,
+      subtasks,
+      attachments: files, // Optional: Attach files to the task if needed
+    };
+
+    if (newTask.status === "complete" && newTask.dueDate) {
+      newTask = {
+        ...newTask,
+        dateCompleted: newTask.dueDate, // Set dateComplete to dueDate
+      };
+    }
+
+    try {
+      // Assuming you have a token for the API request
+      const token = localStorage.getItem("token"); // Adjust this as needed
+      const response = await createTask(newTask, token);
+
+      // Handle success (e.g., redirect or show a success message)
+      console.log("Task created successfully:", response);
+    } catch (error) {
+      // Handle error (e.g., show an error message)
+      console.error("Error creating task:", error);
+    }
   };
 
   return (
     <Layout title="To-do" subtitle="New Task">
       {isModalOpen && (
         <DeleteSubtask
-          subTask={selectedSubTask} // Pass selected subtask to the modal
-          handleDelete={handleDelete}
-          handleModalClose={handleModalClose}
+          subTask={selectedSubTask}
+          handleDelete={() => {
+            setSubtasks((prevSubtasks) =>
+              prevSubtasks.filter((task) => task.id !== selectedSubTask.id)
+            );
+            setSelectedSubTask(null);
+            setIsModalOpen(false);
+          }}
+          handleModalClose={() => setIsModalOpen(false)}
         />
       )}
       <section className="bg-white p-5 rounded-xl overflow-y-scroll">
@@ -119,6 +156,8 @@ export default function NewTask() {
                 name="priority"
                 id="priority"
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.priority}
+                onChange={handleInputChange}
               >
                 <option value="high">High</option>
                 <option value="low">Low</option>
@@ -137,8 +176,10 @@ export default function NewTask() {
                 name="status"
                 id="status"
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.status}
+                onChange={handleInputChange}
               >
-                <option value="not-started">Not Started</option>
+                <option value="not started">Not Started</option>
                 <option value="in-progress">In Progress</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="complete">Complete</option>
@@ -160,6 +201,8 @@ export default function NewTask() {
               rows="3"
               className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
               placeholder="Enter task title"
+              value={taskDetails.title}
+              onChange={handleInputChange}
             />
           </div>
 
@@ -177,6 +220,9 @@ export default function NewTask() {
                 id="dateCreated"
                 name="dateCreated"
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.dateCreated}
+                disabled
+                onChange={handleInputChange}
               />
             </div>
 
@@ -192,6 +238,8 @@ export default function NewTask() {
                 id="dueDate"
                 name="dueDate"
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.dueDate}
+                onChange={handleInputChange}
               />
             </div>
           </div>
@@ -210,6 +258,8 @@ export default function NewTask() {
               rows="3"
               className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
               placeholder="Enter task details"
+              value={taskDetails.details}
+              onChange={handleInputChange}
             />
           </div>
 
@@ -304,7 +354,7 @@ export default function NewTask() {
 
           {/* Subtask */}
           <div className="flex gap-4 items-center justify-between">
-            <h2 className="font-semibold text-lg">Subtask</h2>
+            <h2 className="font-semibold text-lg">Subtasks</h2>
             <button
               onClick={handleAddSubtask}
               className="rounded-full bg-[#027cec] text-white px-5 py-2 flex items-center justify-center w-fit gap-2 cursor-pointer"
@@ -334,13 +384,13 @@ export default function NewTask() {
                   }
                   className="border border-gray-300 rounded-md px-3 py-2 w-72"
                 >
-                  <option value="not-started">Not Started</option>
+                  <option value="not started">Not Started</option>
                   <option value="in-progress">In Progress</option>
                   <option value="complete">Complete</option>
                 </select>
 
                 <button
-                  onClick={() => handleDeleteClick(subtask)} // Pass subtask to delete function
+                  onClick={() => handleRemoveSubtask(subtask.id)}
                   className="ml-4 cursor-pointer"
                 >
                   <img
@@ -354,6 +404,21 @@ export default function NewTask() {
           </div>
         </div>
       </section>
+
+      <div className="flex gap-3 justify-end">
+        <Link
+          to={"/home"}
+          className="rounded-full text-[#027cec] border border-[#027cec] mt-3 px-6 py-1 flex items-center justify-center w-fit gap-2 cursor-pointer"
+        >
+          Cancel
+        </Link>
+        <button
+          className="rounded-full bg-[#027cec] mt-3 text-white px-6 py-1 flex items-center justify-center w-fit gap-2 cursor-pointer"
+          onClick={handleSubmit}
+        >
+          Save
+        </button>
+      </div>
     </Layout>
   );
 }

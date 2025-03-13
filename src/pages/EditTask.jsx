@@ -1,37 +1,60 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Layout from "../components/Layout";
+import closeIcon from "../assets/Icons/Close.svg";
+import deleteActive from "../assets/Icons/Delete_active.svg";
 import DeleteSubtask from "../components/dialog/DeleteSubTask";
-import { useLocation, useParams } from "react-router-dom";
-import { mockTasks } from "../common"; // Assuming you're using mock data
+import { getTaskById, updateTask } from "../api/UsersApi"; // API functions
+import { useParams, Link, useNavigate } from "react-router-dom";
 
 export default function EditTask() {
+  const { taskId } = useParams(); // Get the task ID from URL params
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
+  // State to store form data
+  const [taskDetails, setTaskDetails] = useState({
+    title: "",
+    priority: "low",
+    status: "not started",
+    dateCreated: "",
+    dueDate: "",
+    details: "",
+  });
+
   const [files, setFiles] = useState([]);
   const [subtasks, setSubtasks] = useState([]);
-  const [selectedSubTask, setSelectedSubTask] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [subtaskCount, setSubtaskCount] = useState(0);
-  const [taskData, setTaskData] = useState(null);
-  const [taskNotFound, setTaskNotFound] = useState(false); // New state for handling task not found
-  const location = useLocation();
-  const { taskId } = useParams();
-
-  // Example task fetching function
-  const fetchTaskData = () => {
-    const task = mockTasks.find((task) => task.id === parseInt(taskId)); // Find task by ID
-    if (task) {
-      setTaskData(task);
-      setSubtasks(task.subTasks || []);
-      setSubtaskCount(task.subTasks.length || 0);
-      setTaskNotFound(false); // Task found
-    } else {
-      setTaskNotFound(true); // Task not found
-    }
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSubTask, setSelectedSubTask] = useState(null);
+  const [loading, setLoading] = useState(true); // To show loading state
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchTaskData();
-  }, [location, taskId]);
+    // Fetch the task by ID
+    const fetchTask = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Ensure the token is available
+        const taskData = await getTaskById(taskId, token);
+        setTaskDetails(taskData);
+        setSubtasks(taskData.subtasks || []);
+        setFiles(taskData.attachments || []);
+        setLoading(false);
+      } catch (err) {
+        setError("Error fetching task data.");
+        setLoading(false);
+      }
+    };
+
+    fetchTask();
+  }, [taskId]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setTaskDetails((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files).filter((file) => {
@@ -42,18 +65,6 @@ export default function EditTask() {
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
-  };
-
   const handleRemoveFile = (fileToRemove) => {
     setFiles(files.filter((file) => file !== fileToRemove));
   };
@@ -62,21 +73,10 @@ export default function EditTask() {
     const newSubtask = {
       id: subtaskCount + 1,
       title: `Subtask ${subtaskCount + 1}`,
-      status: "not-started", // default status
+      status: "not started",
     };
     setSubtasks([...subtasks, newSubtask]);
     setSubtaskCount(subtaskCount + 1); // Increment subtask counter
-  };
-
-  const handleRemoveSubtask = (id) => {
-    setSubtasks(subtasks.filter((subtask) => subtask.id !== id));
-  };
-
-  const handleStatusChange = (id, newStatus) => {
-    const updatedSubtasks = subtasks.map((subtask) =>
-      subtask.id === id ? { ...subtask, status: newStatus } : subtask
-    );
-    setSubtasks(updatedSubtasks);
   };
 
   const handleTitleChange = (id, newTitle) => {
@@ -86,51 +86,54 @@ export default function EditTask() {
     setSubtasks(updatedSubtasks);
   };
 
-  const handleDelete = () => {
-    setSubtasks((prevSubtasks) =>
-      prevSubtasks.filter((task) => task.id !== selectedSubTask.id)
+  const handleStatusChange = (id, newStatus) => {
+    const updatedSubtasks = subtasks.map((subtask) =>
+      subtask.id === id ? { ...subtask, status: newStatus } : subtask
     );
-    setSelectedSubTask(null);
-    setIsModalOpen(false);
+    setSubtasks(updatedSubtasks);
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
+  const handleRemoveSubtask = (id) => {
+    setSubtasks(subtasks.filter((subtask) => subtask.id !== id));
   };
 
-  const handleDeleteClick = (subtask) => {
-    setSelectedSubTask(subtask);
-    setIsModalOpen(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const updatedTask = {
+        ...taskDetails,
+        subtasks,
+        attachments: files, // Optional: Attach files to the task if needed
+      };
+
+      if (updatedTask.status === "complete" && updatedTask.dueDate) {
+        updatedTask.dateCompleted = updatedTask.dueDate; // If task is complete, set the completion date
+      }
+
+      await updateTask(taskId, updatedTask, token); // API call to update the task
+      navigate("/home"); // Redirect to the home page or task list after saving the task
+    } catch (error) {
+      console.error("Error updating task:", error);
+    }
   };
 
-  // Handle task data save/update (e.g., to API or local storage)
-  const handleSaveChanges = () => {
-    // Replace with logic to save task data (e.g., API call to save task)
-    console.log("Task updated:", {
-      title: taskData.title,
-      priority: taskData.priority,
-      status: taskData.status,
-      dueDate: taskData.dueDate,
-      subtasks,
-      files,
-    });
-  };
-
-  if (taskNotFound) {
-    return <div>Task not found</div>; // Show task not found message
-  }
-
-  if (!taskData) {
-    return <div>Loading...</div>; // Show loading while task is fetched
-  }
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
-    <Layout title="To-do" subtitle="Edit">
+    <Layout title="To-do" subtitle="Edit Task">
       {isModalOpen && (
         <DeleteSubtask
           subTask={selectedSubTask}
-          handleDelete={handleDelete}
-          handleModalClose={handleModalClose}
+          handleDelete={() => {
+            setSubtasks((prevSubtasks) =>
+              prevSubtasks.filter((task) => task.id !== selectedSubTask.id)
+            );
+            setSelectedSubTask(null);
+            setIsModalOpen(false);
+          }}
+          handleModalClose={() => setIsModalOpen(false)}
         />
       )}
       <section className="bg-white p-5 rounded-xl overflow-y-scroll">
@@ -147,11 +150,9 @@ export default function EditTask() {
               <select
                 name="priority"
                 id="priority"
-                value={taskData.priority}
-                onChange={(e) =>
-                  setTaskData({ ...taskData, priority: e.target.value })
-                }
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.priority}
+                onChange={handleInputChange}
               >
                 <option value="high">High</option>
                 <option value="low">Low</option>
@@ -169,13 +170,11 @@ export default function EditTask() {
               <select
                 name="status"
                 id="status"
-                value={taskData.status}
-                onChange={(e) =>
-                  setTaskData({ ...taskData, status: e.target.value })
-                }
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.status}
+                onChange={handleInputChange}
               >
-                <option value="not-started">Not Started</option>
+                <option value="not started">Not Started</option>
                 <option value="in-progress">In Progress</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="complete">Complete</option>
@@ -195,12 +194,10 @@ export default function EditTask() {
               id="title"
               name="title"
               rows="3"
-              value={taskData.title}
-              onChange={(e) =>
-                setTaskData({ ...taskData, title: e.target.value })
-              }
               className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
               placeholder="Enter task title"
+              value={taskDetails.title}
+              onChange={handleInputChange}
             />
           </div>
 
@@ -217,11 +214,10 @@ export default function EditTask() {
                 type="date"
                 id="dateCreated"
                 name="dateCreated"
-                value={taskData.dateCreated}
-                onChange={(e) =>
-                  setTaskData({ ...taskData, dateCreated: e.target.value })
-                }
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.dateCreated}
+                disabled
+                onChange={handleInputChange}
               />
             </div>
 
@@ -236,11 +232,9 @@ export default function EditTask() {
                 type="date"
                 id="dueDate"
                 name="dueDate"
-                value={taskData.dueDate}
-                onChange={(e) =>
-                  setTaskData({ ...taskData, dueDate: e.target.value })
-                }
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                value={taskDetails.dueDate}
+                onChange={handleInputChange}
               />
             </div>
           </div>
@@ -256,57 +250,108 @@ export default function EditTask() {
             <textarea
               id="details"
               name="details"
-              rows="3"
-              value={taskData.details}
-              onChange={(e) =>
-                setTaskData({ ...taskData, details: e.target.value })
-              }
+              rows="4"
               className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
-              placeholder="Enter task details"
+              value={taskDetails.details}
+              onChange={handleInputChange}
+              placeholder="Add any further task details here"
             />
           </div>
 
-          {/* Attachments */}
+          {/* File Upload */}
           <div className="relative">
             <label
-              htmlFor="attachments"
+              htmlFor="files"
               className="block text-sm font-medium text-[#c7ced6] absolute left-3 top-0 -translate-y-0.5 text-xs bg-white px-1"
             >
-              Attachments
+              Attach Files
             </label>
+            <input
+              type="file"
+              id="files"
+              name="files"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              multiple
+              accept="image/*"
+              className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+            />
+            <div className="mt-2 flex gap-2">
+              {files.map((file, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span>{file.name}</span>
+                  <button
+                    onClick={() => handleRemoveFile(file)}
+                    className="text-red-500"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
 
-            {/* Drop area for drag-and-drop */}
-            <div
-              className="mt-1 block w-full p-4 border border-[#c7ced6] rounded-md h-52 border-dotted flex flex-col justify-center items-center"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current.click()}
-            >
-              <span className="text-gray-500 text-sm">
-                Drop file to attach, or{" "}
-                <span className="text-blue-500 cursor-pointer">browse</span>
-              </span>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                multiple
-                className="hidden"
-              />
+          {/* Subtasks */}
+          <div className="relative">
+            <div className="flex gap-4 items-center justify-between">
+              <h2 className="font-semibold text-lg">Subtasks</h2>
+              <button
+                onClick={handleAddSubtask}
+                className="rounded-full bg-[#027cec] text-white px-5 py-2 flex items-center justify-center w-fit gap-2 cursor-pointer"
+              >
+                <span>+</span>New Subtask
+              </button>
+            </div>
+            <div className="flex flex-col gap-2 mt-3">
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2 mt-2">
+                  <div className="w-full">
+                    <input
+                      type="text"
+                      value={subtask.title}
+                      onChange={(e) =>
+                        handleTitleChange(subtask.id, e.target.value)
+                      }
+                      className="border border-gray-300 rounded-md px-3 py-2 w-full mt-1"
+                    />
+                  </div>
+                  <select
+                    value={subtask.status}
+                    onChange={(e) =>
+                      handleStatusChange(subtask.id, e.target.value)
+                    }
+                    className="border border-gray-300 rounded-md px-3 py-2 w-full mt-1"
+                  >
+                    <option value="not started">Not Started</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="complete">Complete</option>
+                  </select>
+                  <button
+                    onClick={() => handleRemoveSubtask(subtask.id)}
+                    className="ml-4 cursor-pointer"
+                  >
+                    <img
+                      src={deleteActive}
+                      alt="delete icon"
+                      className="w-6 h-6"
+                    />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
       <div className="flex gap-3 justify-end">
-        <button
-          className="rounded-full text-[#027cec] border border-[#027cec] mt-6 px-6 py-1 flex items-center justify-center w-fit gap-2 cursor-pointer"
-          onClick={() => window.history.back()}
+        <Link
+          to={"/home"}
+          className="rounded-full text-[#027cec] border border-[#027cec] mt-3 px-6 py-1 flex items-center justify-center w-fit gap-2 cursor-pointer"
         >
           Cancel
-        </button>
+        </Link>
         <button
-          className="rounded-full bg-[#027cec] mt-6 text-white px-6 py-1 flex items-center justify-center w-fit gap-2 cursor-pointer"
-          onClick={handleSaveChanges}
+          className="rounded-full bg-[#027cec] mt-3 text-white px-6 py-1 flex items-center justify-center w-fit gap-2 cursor-pointer"
+          onClick={handleSubmit}
         >
           Save
         </button>

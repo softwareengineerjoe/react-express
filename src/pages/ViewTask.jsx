@@ -1,30 +1,59 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { mockTasks } from "../common";
 import Layout from "../components/Layout";
 import completedIcon from "../assets/Icons/Complete.svg";
 import inProgressIcon from "../assets/Icons/InProgress.svg";
 import notStartedIcon from "../assets/Icons/NotStarted.svg";
 import cancelledIcon from "../assets/Icons/Cancelled.svg";
 import { formatStringDate } from "../utils/utils";
+import { getTaskById } from "../api/UsersApi";
 
 const ViewTask = () => {
   const { taskId } = useParams();
-  const task = mockTasks.find((task) => task.id === parseInt(taskId));
+  const [task, setTask] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchTask = async () => {
+      try {
+        setLoading(true);
+        const taskData = await getTaskById(taskId, token);
+        setTask(taskData);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTask();
+  }, [taskId, token]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   if (!task) {
     return <div>Task not found!</div>;
   }
 
+  console.log("Task Subtasks:", task.subtasks); // Add this line to inspect subtasks data
+
   const getStatusImage = (status) => {
-    if (status === "Complete") {
-      return <img src={completedIcon} alt="Completed" />;
-    } else if (status === "In Progress") {
-      return <img src={inProgressIcon} alt="In Progress" />;
-    } else if (status === "Not Started") {
-      return <img src={notStartedIcon} alt="Not Started" />;
-    } else if (status === "Cancelled") {
-      return <img src={cancelledIcon} alt="Cancelled" />;
+    if (status.toLowerCase() === "complete") {
+      return <img src={completedIcon} alt="completed" />;
+    } else if (status.toLowerCase() === "in-progress") {
+      return <img src={inProgressIcon} alt="in-progress" />;
+    } else if (status.toLowerCase() === "not started") {
+      return <img src={notStartedIcon} alt="not started" />;
+    } else if (status.toLowerCase() === "cancelled") {
+      return <img src={cancelledIcon} alt="cancelled" />;
     }
     return null;
   };
@@ -34,22 +63,22 @@ const ViewTask = () => {
       <section className="bg-white py-5 px-8 rounded-xl overflow-y-scroll flex flex-col gap-8 h-full">
         <div className="flex items-center gap-6 text-xs">
           <span
-            className={`inline-block px-2 py-1 rounded font-semibold ${
-              task.priority === "Low"
+            className={`inline-block px-2 py-1 rounded font-semibold capitalize ${
+              task.priority === "low"
                 ? "bg-[#f9fff6] text-[#165700] border-2 border-[#2fbd00]"
-                : task.priority === "High"
+                : task.priority === "high"
                 ? "bg-[#ffdf2] text-[#624d00] border-2 border-[#fac300]"
-                : task.priority === "Critical"
+                : task.priority === "critical"
                 ? "bg-[#fff6f] text-[#7f0000] border-2 border-[#eb0000]"
                 : ""
             }`}
           >
             {task.priority}
           </span>
-          <span className="flex gap-2 items-center text-gray-600">
+          <span className="flex gap-2 items-center text-gray-600 capitalize">
             {getStatusImage(task.status)}
             {task.status}
-            {task.status === "Complete" && (
+            {task.status === "complete" && (
               <>
                 {" -"} {formatStringDate(task.dateCompleted)}{" "}
               </>
@@ -57,7 +86,7 @@ const ViewTask = () => {
           </span>
         </div>
         <div>
-          <h2 className="font-bold text-xl">{task.title}</h2>
+          <h2 className="font-bold text-xl capitalize">{task.title}</h2>
           <p className="text-sm text-gray-600">
             {formatStringDate(task.dateCreated)} -{" "}
             {formatStringDate(task.dueDate)}
@@ -66,22 +95,21 @@ const ViewTask = () => {
 
         <p>{task.details}</p>
 
-        <div className="border-2 border-[#c7ced6] mt-6 -mb-4" />
-
         {/* Render subtasks if they exist */}
-        {task.subTasks && task.subTasks.length > 0 && (
+        {task.subtasks && task.subtasks.length > 0 && (
           <>
-            <h3 className="font-bold text-lg">Subtask</h3>
+            <div className="border-2 border-[#c7ced6] mt-6 -mb-4" />
+
+            <h3 className="font-bold text-lg">Subtasks</h3>
             <ul>
-              {task.subTasks.map((subTask) => (
+              {task.subtasks.map((subTask) => (
                 <li
                   key={subTask.id}
                   className="flex items-center justify-between text-left"
                 >
                   {subTask.title}{" "}
                   <span className="flex gap-2 items-center w-4/6">
-                    {getStatusImage(task.status)}
-                    {task.status}
+                    {getStatusImage(subTask.status)} {subTask.status}
                   </span>
                 </li>
               ))}

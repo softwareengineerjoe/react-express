@@ -8,7 +8,8 @@ import { useUser } from "../context/UserContext";
 
 export default function Sidebar() {
   const { isSignoutOpen, toggleSignout } = useUser();
-  const location = useLocation(); 
+  const location = useLocation();
+  const { username } = useUser();
 
   const isActive = (path) => location.pathname.startsWith(path);
 
@@ -18,7 +19,7 @@ export default function Sidebar() {
       <div className="w-full border-b-2 border-[#c7ced6]" />
 
       <img src={avatar} alt="avatar logo" className="w-16 mx-auto mt-6" />
-      <h1 className="text-center text-xl">John Doe_456</h1>
+      <h1 className="text-center text-xl">{username}</h1>
 
       <div className="mt-6">
         <Link

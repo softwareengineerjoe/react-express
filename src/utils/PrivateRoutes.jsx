@@ -5,7 +5,7 @@ const PrivateRoutes = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("jwtToken");
+    const token = localStorage.getItem("token");
     if (token !== null) {
       setIsAuthenticated(true);
     } else {

@@ -7,13 +7,15 @@ import show from "../../assets/Icons/Show.svg";
 import hide from "../../assets/Icons/Hide.svg";
 import google from "../../assets/Icons/Google.svg";
 import facebook from "../../assets/Icons/Facebook.svg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { signup } from "../../api/UsersApi";
 
 export default function CreateAccount() {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [passwordStrength, setPasswordStrength] = useState("Weak");
+  const [accountCreated, setAccountCreated] = useState(false);
   const [isPassed, setIsPassed] = useState({
     minLength: false,
     containsNumberOrSymbol: false,
@@ -23,6 +25,8 @@ export default function CreateAccount() {
     username: false,
     password: false,
   });
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleShowPassword = () => {
     setShowPassword(!showPassword);
@@ -52,6 +56,15 @@ export default function CreateAccount() {
   };
 
   useEffect(() => {
+    if (!username || !password) {
+      setIsPassed({
+        minLength: false,
+        containsNumberOrSymbol: false,
+        containsNameOrEmail: false,
+      });
+      return;
+    }
+
     if (!touched.username || !touched.password) return;
 
     const validatePassword = () => {
@@ -79,6 +92,32 @@ export default function CreateAccount() {
     validatePassword();
   }, [password, username, touched]);
 
+  const handleSignup = async (e) => {
+    e.preventDefault();
+
+    if (
+      !isPassed.minLength ||
+      !isPassed.containsNumberOrSymbol ||
+      !isPassed.containsNameOrEmail
+    ) {
+      setError("Please make sure the password meets all the requirements.");
+      return;
+    }
+
+    try {
+      const response = await signup(username, password);
+
+      // if (response) {
+      //   navigate("/login");
+      // }
+      setAccountCreated(true);
+    } catch (err) {
+      setError(err.message || "Signup failed! Please try again.");
+    } finally {
+      setError(null);
+    }
+  };
+
   return (
     <main className="w-full min-h-screen flex flex-row overflow-hidden">
       <section className="w-full relative">
@@ -94,7 +133,15 @@ export default function CreateAccount() {
         />
       </section>
       <section className="w-full flex flex-col justify-center p-20">
-        <h1 className="text-3xl font-bold">Create an account</h1>
+        <h1 className="text-3xl font-bold">
+          {accountCreated
+            ? "Account successfully created. Sign in to continue"
+            : "Create an account"}
+        </h1>
+
+        {/* Error message */}
+        {error && <p className="text-red-500">{error}</p>}
+
         <div className="mt-6">
           <label
             htmlFor="username"
@@ -126,8 +173,8 @@ export default function CreateAccount() {
             className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 ${
               touched.password &&
               (!isPassed.minLength || !isPassed.containsNumberOrSymbol
-                ? "border-[#ca0061] focus:ring-[#ca0061]" 
-                : "focus:ring-[#027cec] focus:border-[#027cec]") 
+                ? "border-[#ca0061] focus:ring-[#ca0061]"
+                : "focus:ring-[#027cec] focus:border-[#027cec]")
             }`}
           />
 
@@ -176,7 +223,10 @@ export default function CreateAccount() {
           </li>
         </ul>
 
-        <button className="mt-6 bg-[#027cec] px-4 text-white py-2 rounded cursor-pointer">
+        <button
+          onClick={handleSignup}
+          className="mt-6 bg-[#027cec] px-4 text-white py-2 rounded cursor-pointer"
+        >
           Sign up
         </button>
         <p className="text-center mt-4 font-semibold">
