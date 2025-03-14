@@ -104,17 +104,14 @@ export default function CreateAccount() {
       return;
     }
 
+    setError(null);
+
     try {
       const response = await signup(username, password);
 
-      // if (response) {
-      //   navigate("/login");
-      // }
       setAccountCreated(true);
     } catch (err) {
       setError(err.message || "Signup failed! Please try again.");
-    } finally {
-      setError(null);
     }
   };
 

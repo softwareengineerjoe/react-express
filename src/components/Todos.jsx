@@ -36,16 +36,16 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
   const filteredTasks = tasks.filter((task) => {
     // Filter by priority
     if (
-      selectedFilters.priority.length > 0 &&
-      !selectedFilters.priority.includes(task.priority.toLowerCase())
+      selectedFilters?.priority?.length > 0 &&
+      !selectedFilters?.priority?.includes(task.priority.toLowerCase())
     ) {
       return false;
     }
 
     // Filter by status
     if (
-      selectedFilters.status.length > 0 &&
-      !selectedFilters.status.includes(task.status.toLowerCase())
+      selectedFilters?.status?.length > 0 &&
+      !selectedFilters?.status?.includes(task.status.toLowerCase())
     ) {
       return false;
     }
@@ -177,26 +177,26 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
           <tr>
             <th className="px-5 py-3 border-b-2 border-[#c7ced6] align-middle">
               <button
-                disabled={selectedTasks.length === 0}
+                disabled={selectedTasks?.length === 0}
                 className={`${
-                  selectedTasks.length === 0
+                  selectedTasks?.length === 0
                     ? "cursor-not-allowed"
                     : "cursor-pointer "
                 } ${
-                  selectedTasks.length > 0
+                  selectedTasks?.length > 0
                     ? "flex items-center justify-center gap-2 border-2 border-[#c7ced6] p-2 rounded mx-auto"
                     : ""
                 }`}
                 onClick={handleDeleteClick}
               >
                 <img
-                  src={selectedTasks.length > 0 ? deleteActive : deleteInactive}
+                  src={selectedTasks?.length > 0 ? deleteActive : deleteInactive}
                   alt="delete icon"
                   className={`${
-                    selectedTasks.length > 0 ? "" : "mt-2 mx-auto"
+                    selectedTasks?.length > 0 ? "" : "mt-2 mx-auto"
                   }`}
                 />
-                {selectedTasks.length > 0 && (
+                {selectedTasks?.length > 0 && (
                   <p className="py-0.5 px-2 rounded-full bg-[#62c6ff] text-white text-xs font-semibold">
                     {selectedTasks.length}
                   </p>
@@ -239,7 +239,7 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
           </tr>
         </thead>
         <tbody>
-          {sortedTasks.length === 0 ? (
+          {sortedTasks?.length === 0 ? (
             <tr>
               <td
                 colSpan="6"
@@ -263,9 +263,9 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
                   </td>
                   <td className="px-5 py-3 font-semibold underline border-b-2 border-[#c7ced6]">
                     <span className="flex items-center gap-4">
-                      {task.subtasks &&
-                        Array.isArray(task.subtasks) &&
-                        task.subtasks.length > 0 && (
+                      {task?.subtasks &&
+                        Array.isArray(task?.subtasks) &&
+                        task?.subtasks?.length > 0 && (
                           <img
                             src={
                               expandedTasks[task.id]
@@ -283,7 +283,7 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
                       >
                         {task.title}
                       </Link>
-                      {task.attachments.length > 0 && (
+                      {task.attachments?.length > 0 && (
                         <img src={attachmentIcon} alt="attachment icon" />
                       )}
                     </span>
@@ -293,7 +293,7 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
                   </td>
                   <td
                     className={`px-5 py-3 border-b-2 border-[#c7ced6] ${
-                      index === sortedTasks.length - 1 ? "" : "border-b-2"
+                      index === sortedTasks?.length - 1 ? "" : "border-b-2"
                     }`}
                   >
                     <span
@@ -328,10 +328,10 @@ export default function Todos({ tasks, setTasks, selectedFilters }) {
 
                 {/* Expanded Subtask Rows */}
                 {expandedTasks[task.id] &&
-                  task.subtasks &&
-                  Array.isArray(task.subtasks) &&
-                  task.subtasks.length > 0 &&
-                  task.subtasks.map((subTask) => (
+                  task?.subtasks &&
+                  Array.isArray(task?.subtasks) &&
+                  task?.subtasks?.length > 0 &&
+                  task?.subtasks.map((subTask) => (
                     <tr key={subTask.id}>
                       <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
                       <td className="px-5 py-3 border-b-2 border-[#c7ced6] indent-18 capitalize">
