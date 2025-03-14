@@ -2,19 +2,18 @@ import React, { useRef, useState } from "react";
 import Layout from "../components/Layout";
 import closeIcon from "../assets/Icons/Close.svg";
 import deleteActive from "../assets/Icons/Delete_active.svg";
-import DeleteSubtask from "../components/dialog/DeleteSubTask";
-import { mockTasks } from "../common"; // Mock tasks
+import { today } from "../common";
 import { createTask } from "../api/UsersApi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function NewTask() {
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [files, setFiles] = useState([]);
   const [subtasks, setSubtasks] = useState([]);
-  const [selectedSubTask, setSelectedSubTask] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [subtaskCount, setSubtaskCount] = useState(0);
-  const today = new Date().toISOString().split("T")[0];
+
   const [taskDetails, setTaskDetails] = useState({
     title: "",
     priority: "low",
@@ -22,6 +21,11 @@ export default function NewTask() {
     dateCreated: today,
     dueDate: "",
     details: "",
+  });
+
+  const [errors, setErrors] = useState({
+    title: "",
+    dueDate: "",
   });
 
   const handleInputChange = (e) => {
@@ -90,38 +94,63 @@ export default function NewTask() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Reset errors
+    setErrors({
+      title: "",
+      dueDate: "",
+    });
+
+    let isValid = true;
+
+    // Validate title
+    if (!taskDetails.title.trim()) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        title: "Must not be empty",
+      }));
+      isValid = false;
+    }
+
+    // Validate dueDate
+    if (!taskDetails.dueDate || taskDetails.dueDate <= today) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        dueDate: "Must be later than Date Created",
+      }));
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
     // Set dateCreated to today's date if not already set
     if (!taskDetails.dateCreated) {
-      const today = new Date().toISOString().split("T")[0]; // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split("T")[0];
       setTaskDetails((prev) => ({
         ...prev,
         dateCreated: today,
       }));
     }
 
-    // If the status is "complete", add dateComplete as dueDate
     let newTask = {
       ...taskDetails,
       subtasks,
-      attachments: files, // Optional: Attach files to the task if needed
+      attachments: files,
     };
 
     if (newTask.status === "complete" && newTask.dueDate) {
       newTask = {
         ...newTask,
-        dateCompleted: newTask.dueDate, // Set dateComplete to dueDate
+        dateCompleted: newTask.dueDate,
       };
     }
 
     try {
-      // Assuming you have a token for the API request
-      const token = localStorage.getItem("token"); // Adjust this as needed
+      const token = localStorage.getItem("token");
       const response = await createTask(newTask, token);
 
-      // Handle success (e.g., redirect or show a success message)
       console.log("Task created successfully:", response);
+      navigate("/home");
     } catch (error) {
-      // Handle error (e.g., show an error message)
       console.error("Error creating task:", error);
     }
   };
@@ -129,18 +158,13 @@ export default function NewTask() {
   return (
     <Layout title="To-do" subtitle="New Task">
       {isModalOpen && (
-        <DeleteSubtask
-          subTask={selectedSubTask}
-          handleDelete={() => {
-            setSubtasks((prevSubtasks) =>
-              prevSubtasks.filter((task) => task.id !== selectedSubTask.id)
-            );
-            setSelectedSubTask(null);
-            setIsModalOpen(false);
-          }}
-          handleModalClose={() => setIsModalOpen(false)}
+        <DeleteModal
+          selectedTasks={task}
+          handleDelete={handleDelete}
+          handleModalClose={handleModalClose}
         />
       )}
+
       <section className="bg-white p-5 rounded-xl overflow-y-scroll">
         <div className="max-w-3xl w-full flex flex-col gap-4 mx-auto text-sm">
           {/* Priority and Status Fields */}
@@ -180,7 +204,7 @@ export default function NewTask() {
                 onChange={handleInputChange}
               >
                 <option value="not started">Not Started</option>
-                <option value="in-progress">In Progress</option>
+                <option value="in progress">In Progress</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="complete">Complete</option>
               </select>
@@ -191,7 +215,9 @@ export default function NewTask() {
           <div className="relative">
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-[#c7ced6] absolute left-3 top-0 -translate-y-0.5 text-xs bg-white px-1"
+              className={`block text-sm font-medium absolute left-3 top-0 -translate-y-0.5 text-xs bg-white px-1 ${
+                errors.title ? "text-[#ca0061]" : "text-[#c7ced6]"
+              }`}
             >
               Title
             </label>
@@ -199,11 +225,18 @@ export default function NewTask() {
               id="title"
               name="title"
               rows="3"
-              className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+              className={`mt-1 block w-full p-2 border rounded-md ${
+                errors.title ? "border-[#ca0061]" : "border-[#c7ced6]"
+              }`}
               placeholder="Enter task title"
               value={taskDetails.title}
               onChange={handleInputChange}
             />
+            {errors.title && (
+              <p className="text-[#ca0061] text-xs mt-1 indent-2 font-semibold">
+                {errors.title}
+              </p>
+            )}
           </div>
 
           {/* Date Created and Due Date */}
@@ -229,7 +262,9 @@ export default function NewTask() {
             <div className="relative flex-1">
               <label
                 htmlFor="dueDate"
-                className="block text-sm font-medium text-[#c7ced6] absolute left-3 top-0 -translate-y-0.5 text-xs bg-white px-1"
+                className={`block text-sm font-medium absolute left-3 top-0 -translate-y-0.5 text-xs bg-white px-1 ${
+                  errors.dueDate ? "text-[#ca0061]" : "text-[#c7ced6]"
+                }`}
               >
                 Due Date
               </label>
@@ -237,10 +272,18 @@ export default function NewTask() {
                 type="date"
                 id="dueDate"
                 name="dueDate"
-                className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+                min={today}
+                className={`mt-1 block w-full p-2 border rounded-md ${
+                  errors.dueDate ? "border-[#ca0061]" : "border-[#c7ced6]"
+                }`}
                 value={taskDetails.dueDate}
                 onChange={handleInputChange}
               />
+              {errors.dueDate && (
+                <p className="text-[#ca0061] text-xs mt-1 indent-2 font-semibold">
+                  {errors.dueDate}
+                </p>
+              )}
             </div>
           </div>
 
@@ -345,6 +388,7 @@ export default function NewTask() {
               ref={fileInputRef}
               className="hidden"
               multiple
+              accept="image/png, image/jpeg, image/jpg"
               onChange={handleFileChange}
             />
           </div>
@@ -385,7 +429,7 @@ export default function NewTask() {
                   className="border border-gray-300 rounded-md px-3 py-2 w-72"
                 >
                   <option value="not started">Not Started</option>
-                  <option value="in-progress">In Progress</option>
+                  <option value="in progress">In Progress</option>
                   <option value="complete">Complete</option>
                 </select>
 

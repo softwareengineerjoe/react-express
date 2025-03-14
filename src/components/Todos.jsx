@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import sort from "../assets/Icons/Sort_desktop.svg";
-import edit from "../assets/Icons/Edit.svg";
-import deleteActive from "../assets/Icons/Delete_active.svg";
-import deleteInactive from "../assets/Icons/Delete_inactive.svg";
-import completedIcon from "../assets/Icons/Complete.svg";
 import attachmentIcon from "../assets/Icons/attachment.svg";
+import completedIcon from "../assets/Icons/Complete.svg";
 import inProgressIcon from "../assets/Icons/InProgress.svg";
 import notStartedIcon from "../assets/Icons/NotStarted.svg";
 import cancelledIcon from "../assets/Icons/Cancelled.svg";
+import deleteInactive from "../assets/Icons/Delete_inactive.svg";
+import deleteActive from "../assets/Icons/Delete_active.svg";
 import accordionSupress from "../assets/Icons/Accordion_supress.svg";
 import accordionExpand from "../assets/Icons/Accordion_expand.svg";
+import edit from "../assets/Icons/Edit.svg";
 import { formatDate } from "../utils/utils";
 import DeleteModal from "./dialog/DeleteModal";
-import { Link } from "react-router-dom";
-import { deleteTask, getTasks } from "../api/UsersApi";
+import { deleteTask } from "../api/UsersApi";
 
-export default function Todos() {
-  const [tasks, setTasks] = useState([]);
+export default function Todos({ tasks, setTasks, selectedFilters }) {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortConfig, setSortConfig] = useState({
@@ -24,32 +23,37 @@ export default function Todos() {
     direction: "asc",
   });
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-          console.error("No token found!");
-          return;
-        }
-
-        const tasksData = await getTasks(token);
-
-        setTasks(tasksData);
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-      }
-    };
-
-    fetchTasks();
-  }, []);
-
-  console.log(tasks);
-
-  // State to track which task is expanded
   const [expandedTasks, setExpandedTasks] = useState({});
 
+  const toggleSubTasks = (taskId) => {
+    setExpandedTasks((prev) => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
+  };
+
+  // Filter tasks based on selected filters
+  const filteredTasks = tasks.filter((task) => {
+    // Filter by priority
+    if (
+      selectedFilters.priority.length > 0 &&
+      !selectedFilters.priority.includes(task.priority.toLowerCase())
+    ) {
+      return false;
+    }
+
+    // Filter by status
+    if (
+      selectedFilters.status.length > 0 &&
+      !selectedFilters.status.includes(task.status.toLowerCase())
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Handle checkbox change
   const handleCheckboxChange = (taskId) => {
     setSelectedTasks((prev) =>
       prev.includes(taskId)
@@ -58,6 +62,7 @@ export default function Todos() {
     );
   };
 
+  // Handle sorting
   const handleSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -67,14 +72,8 @@ export default function Todos() {
     setSortConfig({ key, direction });
   };
 
-  const toggleSubTasks = (taskId) => {
-    setExpandedTasks((prev) => ({
-      ...prev,
-      [taskId]: !prev[taskId],
-    }));
-  };
-
-  const sortedTasks = [...tasks].sort((a, b) => {
+  // Sorting the tasks based on the selected key and direction
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
     const { key, direction } = sortConfig;
     let result = 0;
 
@@ -95,13 +94,33 @@ export default function Todos() {
 
   const getStatusImage = (status) => {
     if (status === "complete") {
-      return <img src={completedIcon} alt="completed" />;
-    } else if (status === "in-progress") {
-      return <img src={inProgressIcon} alt="in-progress" />;
+      return (
+        <img
+          src={completedIcon}
+          alt="completed"
+        />
+      );
+    } else if (status === "in progress") {
+      return (
+        <img
+          src={inProgressIcon}
+          alt="in progress"
+        />
+      );
     } else if (status === "not started") {
-      return <img src={notStartedIcon} alt="not started" />;
+      return (
+        <img
+          src={notStartedIcon}
+          alt="not started"
+        />
+      );
     } else if (status === "cancelled") {
-      return <img src={cancelledIcon} alt="cancelled" />;
+      return (
+        <img
+          src={cancelledIcon}
+          alt="cancelled"
+        />
+      );
     }
     return null;
   };
@@ -115,12 +134,15 @@ export default function Todos() {
         return;
       }
 
+      const deletedTaskIds = [];
+
       for (const taskId of selectedTasks) {
         await deleteTask(taskId, token);
+        deletedTaskIds.push(taskId);
       }
 
       setTasks((prevTasks) =>
-        prevTasks.filter((task) => !selectedTasks.includes(task.id))
+        prevTasks.filter((task) => !deletedTaskIds.includes(task.id))
       );
 
       setSelectedTasks([]);
@@ -139,8 +161,6 @@ export default function Todos() {
   const handleDeleteClick = () => {
     setIsModalOpen(true);
   };
-
-  console.log(tasks);
 
   return (
     <div className="overflow-hidden rounded-xl shadow-lg border-2 border-[#c7ced6] overflow-y-scroll">
@@ -231,12 +251,9 @@ export default function Todos() {
           ) : (
             sortedTasks.map((task, index) => (
               <React.Fragment key={task.id}>
+                {/* Task Row */}
                 <tr>
-                  <td
-                    className={`px-5 py-3 ${
-                      index === sortedTasks.length - 1 ? "" : "border-b-2"
-                    } border-[#c7ced6] text-center align-middle`}
-                  >
+                  <td className="px-5 py-3 border-b-2 border-[#c7ced6] text-center">
                     <input
                       type="checkbox"
                       checked={selectedTasks.includes(task.id)}
@@ -244,12 +261,7 @@ export default function Todos() {
                       className="w-5 h-5 border-2 border-[#c7ced6] rounded-md transition-colors duration-200 peer checked:bg-[#62c6ff] checked:border-[#62c6ff]"
                     />
                   </td>
-
-                  <td
-                    className={`px-5 py-3 font-semibold underline ${
-                      index === sortedTasks.length - 1 ? "" : "border-b-2"
-                    } border-[#c7ced6]`}
-                  >
+                  <td className="px-5 py-3 font-semibold underline border-b-2 border-[#c7ced6]">
                     <span className="flex items-center gap-4">
                       {task.subtasks &&
                         Array.isArray(task.subtasks) &&
@@ -265,33 +277,24 @@ export default function Todos() {
                             className="cursor-pointer"
                           />
                         )}
-
                       <Link
                         to={`/home/view-task/${task.id}`}
                         className="capitalize"
                       >
                         {task.title}
                       </Link>
-                      {task.hasAttachment && <img src={attachmentIcon} />}
+                      {task.attachments.length > 0 && (
+                        <img src={attachmentIcon} alt="attachment icon" />
+                      )}
                     </span>
                   </td>
-                  <td
-                    className={`px-5 py-3 ${
-                      index === sortedTasks.length - 1 ? "" : "border-b-2"
-                    } border-[#c7ced6] ${
-                      new Date(task.dueDate) < new Date() &&
-                      task.status !== "Complete"
-                        ? "text-red-500"
-                        : ""
-                    }`}
-                  >
+                  <td className="px-5 py-3 border-b-2 border-[#c7ced6]">
                     {formatDate(task.dueDate)}
                   </td>
-
                   <td
-                    className={`px-5 py-3 ${
+                    className={`px-5 py-3 border-b-2 border-[#c7ced6] ${
                       index === sortedTasks.length - 1 ? "" : "border-b-2"
-                    } border-[#c7ced6]`}
+                    }`}
                   >
                     <span
                       className={`inline-block px-2 py-1 rounded font-semibold capitalize ${
@@ -307,22 +310,13 @@ export default function Todos() {
                       {task.priority}
                     </span>
                   </td>
-
-                  <td
-                    className={`px-5 py-3 ${
-                      index === sortedTasks.length - 1 ? "" : "border-b-2"
-                    } border-[#c7ced6]`}
-                  >
-                    <span className="flex gap-2 items-center capitalize">
+                  <td className="px-5 py-3 border-b-2 border-[#c7ced6]">
+                    <span className="flex items-center gap-2 capitalize">
                       {getStatusImage(task.status)}
                       {task.status}
                     </span>
                   </td>
-                  <td
-                    className={`px-5 py-3 ${
-                      index === sortedTasks.length - 1 ? "" : "border-b-2"
-                    } border-[#c7ced6]`}
-                  >
+                  <td className="px-5 py-3 border-b-2 border-[#c7ced6]">
                     <Link
                       to={`/home/view-task/edit-task/${task.id}`}
                       className="text-blue-500 cursor-pointer"
@@ -332,32 +326,28 @@ export default function Todos() {
                   </td>
                 </tr>
 
-                {/* Render Subtasks */}
+                {/* Expanded Subtask Rows */}
                 {expandedTasks[task.id] &&
-                  task.subtasks && // Make sure to use `task.subtasks` (lowercase "s")
+                  task.subtasks &&
                   Array.isArray(task.subtasks) &&
                   task.subtasks.length > 0 &&
-                  task.subtasks.map(
-                    (
-                      subTask // Corrected from `task.subTasks` to `task.subtasks`
-                    ) => (
-                      <tr key={subTask.id}>
-                        <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
-                        <td className="px-5 py-3 border-b-2 border-[#c7ced6] indent-18 capitalize">
-                          {subTask.title}
-                        </td>
-                        <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
-                        <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
-                        <td className="px-5 py-3 border-b-2 border-[#c7ced6]">
-                          <span className="flex items-center gap-2 ml-6 capitalize">
-                            {getStatusImage(subTask.status)}
-                            {subTask.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
-                      </tr>
-                    )
-                  )}
+                  task.subtasks.map((subTask) => (
+                    <tr key={subTask.id}>
+                      <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                      <td className="px-5 py-3 border-b-2 border-[#c7ced6] indent-18 capitalize">
+                        {subTask.title}
+                      </td>
+                      <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                      <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                      <td className="px-5 py-3 border-b-2 border-[#c7ced6]">
+                        <span className="flex items-center gap-2 ml-6 capitalize">
+                          {getStatusImage(subTask.status)}
+                          {subTask.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 border-b-2 border-[#c7ced6]"></td>
+                    </tr>
+                  ))}
               </React.Fragment>
             ))
           )}

@@ -6,12 +6,30 @@ const PrivateRoutes = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token !== null) {
-      setIsAuthenticated(true);
+
+    if (token) {
+      const isValidToken = validateToken(token);
+      
+      if (!isValidToken) {
+        localStorage.removeItem("token");
+        setIsAuthenticated(false);
+      } else {
+        setIsAuthenticated(true);
+      }
     } else {
       setIsAuthenticated(false);
     }
   }, []);
+
+  const validateToken = (token) => {
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1])); 
+      const currentTime = Math.floor(Date.now() / 1000);
+      return decodedToken.exp > currentTime; 
+    } catch (e) {
+      return false; 
+    }
+  };
 
   if (isAuthenticated === null) {
     return <div>Loading...</div>;

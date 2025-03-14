@@ -2,11 +2,13 @@ import React from "react";
 import Sidebar from "./Sidebar";
 import { useUser } from "../context/UserContext";
 import Signout from "./dialog/Signout";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 export default function Layout({ children, title, subtitle }) {
   const { isSignoutOpen } = useUser();
+  const navigate = useNavigate();
   const taskId = useParams();
+
   return (
     <main className="w-full min-h-screen overflow-hidden flex flex-row relative">
       <Signout isOpen={isSignoutOpen} />
@@ -18,9 +20,9 @@ export default function Layout({ children, title, subtitle }) {
               {!subtitle ? (
                 title
               ) : (
-                <Link to={"/home"} className="cursor-pointer">
+                <button onClick={() => navigate(-1)} className="cursor-pointer">
                   {"< Back"}
-                </Link>
+                </button>
               )}
             </h2>
             {subtitle && subtitle === "Edit" ? (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Layout from "../components/Layout";
-import closeIcon from "../assets/Icons/Close.svg";
+import { today } from "../common";
 import deleteActive from "../assets/Icons/Delete_active.svg";
 import DeleteSubtask from "../components/dialog/DeleteSubTask";
 import { getTaskById, updateTask } from "../api/UsersApi"; // API functions
@@ -54,6 +54,19 @@ export default function EditTask() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  // Handle drag-and-drop functionality
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
   };
 
   const handleFileChange = (e) => {
@@ -175,7 +188,7 @@ export default function EditTask() {
                 onChange={handleInputChange}
               >
                 <option value="not started">Not Started</option>
-                <option value="in-progress">In Progress</option>
+                <option value="in progress">In Progress</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="complete">Complete</option>
               </select>
@@ -234,6 +247,7 @@ export default function EditTask() {
                 name="dueDate"
                 className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
                 value={taskDetails.dueDate}
+                min={today}
                 onChange={handleInputChange}
               />
             </div>
@@ -261,34 +275,89 @@ export default function EditTask() {
           {/* File Upload */}
           <div className="relative">
             <label
-              htmlFor="files"
+              htmlFor="attachments"
               className="block text-sm font-medium text-[#c7ced6] absolute left-3 top-0 -translate-y-0.5 text-xs bg-white px-1"
             >
-              Attach Files
+              Attachments
             </label>
+
+            {/* Drop area for drag-and-drop */}
+            <div
+              className="mt-1 block w-full p-4 border border-[#c7ced6] rounded-md h-52 border-dotted flex flex-col justify-center items-center"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current.click()}
+            >
+              <span className="text-gray-500 text-sm">
+                Drop file to attach, or{" "}
+                <span className="text-blue-500 cursor-pointer">browse</span>
+              </span>
+
+              {/* Files Preview */}
+              <div className="flex flex-row gap-6 items-center w-full mt-4">
+                {files.map((file, index) => (
+                  <div
+                    key={index}
+                    className="relative w-20"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* File Thumbnail */}
+                    {file.type.startsWith("image/") ? (
+                      <div className="h-24 w-20 mt-2">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="w-full h-full object-cover bg-gray-100 border"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-24 w-20 mt-2 bg-gray-200 flex justify-center items-center text-sm text-gray-500 break-words overflow-hidden text-xs p-2 border">
+                        <span>{file.name}</span>
+                      </div>
+                    )}
+
+                    {/* File Name and File Size */}
+                    <div className="text-xs overflow-hidden break-words">
+                      <p className="underline text-ellipsis whitespace-nowrap overflow-hidden">
+                        {file.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        {file.size > 1024
+                          ? (file.size / 1024).toFixed(2) + " MB"
+                          : file.size + " bytes"}
+                      </p>
+                    </div>
+
+                    {/* Close Button to Remove File */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile(file);
+                      }}
+                      className="absolute -translate-y-3 translate-x-2 top-0 right-0 p-0.5 bg-white rounded-full text-[#c7ced6] border-[#c7ced6] border cursor-pointer"
+                    >
+                      <img
+                        src={deleteActive}
+                        alt="Delete file"
+                        className="w-2 h-2"
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hidden file input */}
             <input
               type="file"
-              id="files"
-              name="files"
+              id="attachments"
+              name="attachments"
               ref={fileInputRef}
-              onChange={handleFileChange}
+              className="hidden"
               multiple
-              accept="image/*"
-              className="mt-1 block w-full p-2 border border-[#c7ced6] rounded-md"
+              accept="image/png, image/jpeg, image/jpg"
+              onChange={handleFileChange}
             />
-            <div className="mt-2 flex gap-2">
-              {files.map((file, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span>{file.name}</span>
-                  <button
-                    onClick={() => handleRemoveFile(file)}
-                    className="text-red-500"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Subtasks */}
@@ -323,7 +392,7 @@ export default function EditTask() {
                     className="border border-gray-300 rounded-md px-3 py-2 w-full mt-1"
                   >
                     <option value="not started">Not Started</option>
-                    <option value="in-progress">In Progress</option>
+                    <option value="in progress">In Progress</option>
                     <option value="complete">Complete</option>
                   </select>
                   <button

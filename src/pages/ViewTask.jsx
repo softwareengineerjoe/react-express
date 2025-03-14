@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import completedIcon from "../assets/Icons/Complete.svg";
 import inProgressIcon from "../assets/Icons/InProgress.svg";
 import notStartedIcon from "../assets/Icons/NotStarted.svg";
 import cancelledIcon from "../assets/Icons/Cancelled.svg";
 import { formatStringDate } from "../utils/utils";
-import { getTaskById } from "../api/UsersApi";
+import { deleteTask, getTaskById } from "../api/UsersApi";
+import deleteIcon from "../assets/Icons/Delete_active.svg";
+import editIcon from "../assets/Icons/Edit.svg";
+import DeleteModal from "../components/dialog/DeleteModal";
 
 const ViewTask = () => {
+  const navigate = useNavigate();
   const { taskId } = useParams();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -43,8 +48,6 @@ const ViewTask = () => {
     return <div>Task not found!</div>;
   }
 
-  console.log("Task Subtasks:", task.subtasks); // Add this line to inspect subtasks data
-
   const getStatusImage = (status) => {
     if (status.toLowerCase() === "complete") {
       return <img src={completedIcon} alt="completed" />;
@@ -58,10 +61,41 @@ const ViewTask = () => {
     return null;
   };
 
+  const handleDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+      await deleteTask(taskId, token);
+      navigate("/home");
+      console.log("Task deleted successfully");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false); 
+  };
+
+  const openDeleteModal = () => {
+    setIsModalOpen(true); 
+  };
+
   return (
     <Layout title="To-do" subtitle="View Task">
+      {isModalOpen && (
+        <DeleteModal
+          selectedTasks={[task]}
+          handleDelete={handleDelete}
+          handleModalClose={handleModalClose}
+        />
+      )}
       <section className="bg-white py-5 px-8 rounded-xl overflow-y-scroll flex flex-col gap-8 h-full">
-        <div className="flex items-center gap-6 text-xs">
+        <div className="flex items-center gap-6 text-xs w-full">
           <span
             className={`inline-block px-2 py-1 rounded font-semibold capitalize ${
               task.priority === "low"
@@ -84,6 +118,16 @@ const ViewTask = () => {
               </>
             )}
           </span>
+
+          <button className="ml-auto cursor-pointer" onClick={openDeleteModal}>
+            <img src={deleteIcon} alt="Delete" />
+          </button>
+          <Link
+            to={`/home/view-task/edit-task/${task.id}`}
+            className="text-blue-500 cursor-pointer"
+          >
+            <img src={editIcon} alt="pen icon" />
+          </Link>
         </div>
         <div>
           <h2 className="font-bold text-xl capitalize">{task.title}</h2>

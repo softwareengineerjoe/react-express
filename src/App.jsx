@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { UserProvider } from "./context/UserContext";
 import Home from "./pages/Home";
 import NewTask from "./pages/NewTask";
@@ -10,6 +15,7 @@ import NoPage from "./pages/NoPage";
 import PrivateRoutes from "./utils/PrivateRoutes";
 import ViewTask from "./pages/ViewTask";
 import EditTask from "./pages/EditTask";
+import { TaskProvider } from "./context/TaskContext";
 
 function App() {
   const userRoutes = [
@@ -21,30 +27,32 @@ function App() {
 
   return (
     <UserProvider>
-      <Router>
-        <Routes>
-          {/* Redirect root route to /home */}
-          <Route path="/" element={<Navigate to="/home" />} />
-          
-          {/* Login route */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/create-account" element={<CreateAccount />} />
-          
-          {/* Protected Routes */}
-          <Route element={<PrivateRoutes />}>
-            {userRoutes.map((route) => (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={route.element}
-              />
-            ))}
-          </Route>
+      <TaskProvider>
+        <Router>
+          <Routes>
+            {/* Redirect root route to /home */}
+            <Route path="/" element={<Navigate to="/home" />} />
 
-          {/* Catch-all route for non-existing paths */}
-          <Route element={<NoPage />} path="*" />
-        </Routes>
-      </Router>
+            {/* Login route */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/create-account" element={<CreateAccount />} />
+
+            {/* Protected Routes */}
+            <Route element={<PrivateRoutes />}>
+              {userRoutes.map((route) => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={route.element}
+                />
+              ))}
+            </Route>
+
+            {/* Catch-all route for non-existing paths */}
+            <Route element={<NoPage />} path="*" />
+          </Routes>
+        </Router>
+      </TaskProvider>
     </UserProvider>
   );
 }
