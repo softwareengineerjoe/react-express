@@ -26,8 +26,6 @@ export default function EditTask() {
   const [subtaskCount, setSubtaskCount] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubTask, setSelectedSubTask] = useState(null);
-  const [loading, setLoading] = useState(true); // To show loading state
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Fetch the task by ID
@@ -38,10 +36,8 @@ export default function EditTask() {
         setTaskDetails(taskData);
         setSubtasks(taskData.subtasks || []);
         setFiles(taskData.attachments || []);
-        setLoading(false);
       } catch (err) {
-        setError("Error fetching task data.");
-        setLoading(false);
+        console.error;
       }
     };
 
@@ -130,9 +126,6 @@ export default function EditTask() {
       console.error("Error updating task:", error);
     }
   };
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
 
   return (
     <Layout title="To-do" subtitle="Edit Task">
@@ -302,7 +295,7 @@ export default function EditTask() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* File Thumbnail */}
-                    {file.type.startsWith("image/") ? (
+                    {file.type?.startsWith("image/") ? (
                       <div className="h-24 w-20 mt-2">
                         <img
                           src={URL.createObjectURL(file)}
